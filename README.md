@@ -1,4 +1,4 @@
-# Common device tree for Xiaomi Thorium devices
+# Device Tree for Xiaomi MSM8937 Devices (Mi8937)
 
 ```
 #

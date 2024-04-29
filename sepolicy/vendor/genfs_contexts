@@ -1,20 +1,55 @@
 # Boot reason
 genfscon proc  /sys/kernel/boot_reason   u:object_r:proc_boot_reason:s0
 
+# Camera
+genfscon sysfs /camera_fusion_id_back  u:object_r:sysfs_camera_fusion_id:s0
+genfscon sysfs /camera_fusion_id_front u:object_r:sysfs_camera_fusion_id:s0
+
+# Extcon
+genfscon sysfs /devices/platform/soc/200f000.qcom,spmi/spmi-0/spmi0-02/200f000.qcom,spmi:qcom,pmi8950@2:qcom,qpnp-smbcharger/extcon	u:object_r:sysfs_extcon:s0
+genfscon sysfs /devices/platform/soc/soc:qcom,mdss_wb_panel/extcon	u:object_r:sysfs_graphics:s0
+genfscon sysfs /devices/platform/soc/soc:usb_power_supply/extcon	u:object_r:sysfs_extcon:s0
+
 # FDT
 genfscon sysfs /firmware/devicetree/base/compatible		u:object_r:fdt_compatible:s0
 genfscon sysfs /firmware/devicetree/base/model			u:object_r:fdt_model:s0
 genfscon sysfs /firmware/devicetree/base/soc/sound/qcom,model	u:object_r:fdt_sound:s0
 
-# Leds
+# IR
+genfscon sysfs /devices/platform/soc/soc:gpio-leds/leds	u:object_r:sysfs_leds:s0
+
+# LEDs
 genfscon sysfs /devices/platform/soc/200f000.qcom,spmi/spmi-0/spmi0-00/200f000.qcom,spmi:qcom,pm8953@0:qcom,leds@a100 u:object_r:sysfs_leds:s0
 genfscon sysfs /devices/platform/soc/78b6000.i2c/i2c-2/2-0045/leds/ u:object_r:sysfs_leds:s0
+genfscon sysfs /devices/platform/soc/78b6000.i2c/i2c-2/2-0045/leds		u:object_r:sysfs_leds:s0
+genfscon sysfs /devices/platform/soc/7af5000.i2c/i2c-5/5-0045/leds		u:object_r:sysfs_leds:s0
+genfscon sysfs /devices/platform/soc/soc:flashlight/leds/flashlight		u:object_r:sysfs_leds:s0
+genfscon sysfs /devices/platform/soc/soc:flashlight-front/leds/flashlight-front	u:object_r:sysfs_leds:s0
+
+# Mach
+genfscon sysfs /xiaomi-msm8937-mach	u:object_r:sysfs_mi8937_mach:s0
 
 # Power
 genfscon sysfs /devices/soc/soc:qcom,bcl/power_supply                u:object_r:sysfs_batteryinfo:s0
 genfscon sysfs /devices/soc/msm-bcl-21/power_supply                  u:object_r:sysfs_batteryinfo:s0
 genfscon sysfs /devices/soc/qpnp-typec-9/power_supply                  u:object_r:sysfs_batteryinfo:s0
 genfscon sysfs /devices/platform/soc/200f000.qcom,spmi/spmi-0/spmi0-02/200f000.qcom,spmi:qcom,pmi8950@2:vadc@3100 u:object_r:sysfs_battery_supply:s0
+genfscon sysfs /devices/platform/soc/soc:usb_power_supply/power_supply/usb		u:object_r:sysfs_usb_supply:s0
+
+# Power - ulysse
+genfscon sysfs /devices/platform/soc/78b6000.i2c/i2c-2/2-0055/power_supply/bms		u:object_r:sysfs_battery_supply:s0
+genfscon sysfs /devices/platform/soc/78b6000.i2c/i2c-2/2-006b/power_supply/battery	u:object_r:sysfs_battery_supply:s0
+
+# Power - rolex
+genfscon sysfs /devices/platform/soc/7af5000.i2c/i2c-5/5-0057/power_supply/battery	u:object_r:sysfs_battery_supply:s0
+genfscon sysfs /devices/platform/soc/7af5000.i2c/i2c-5/5-0062/power_supply/bms		u:object_r:sysfs_battery_supply:s0
+
+# Power - riva
+genfscon sysfs /devices/platform/soc/7af5000.i2c/i2c-5/5-006b/power_supply/battery	u:object_r:sysfs_battery_supply:s0
+genfscon sysfs /devices/platform/soc/7af5000.i2c/i2c-5/5-0055/power_supply/bms		u:object_r:sysfs_battery_supply:s0
+
+# Power - Misc
+genfscon sysfs /devices/platform/soc/200f000.qcom,spmi/spmi-0/spmi0-02/200f000.qcom,spmi:qcom,pmi8950@2:bcl@4200/power_supply/fg_adc	u:object_r:sysfs_battery_supply:s0
 
 # ProcFS
 genfscon proc /sys/vm/dirty_writeback_centisecs				u:object_r:proc_dirty:s0
@@ -28,3 +63,10 @@ genfscon sysfs /devices/platform/soc/200f000.qcom,spmi/spmi-0/spmi0-00/200f000.q
 
 # SDHCI
 genfscon sysfs /kernel/sdhci_msm	u:object_r:sysfs_kernel_sdhci_msm:s0
+
+# Touchscreen
+genfscon proc  /sys/dev/xiaomi_msm8937_touchscreen			u:object_r:sysctl_mi8937_ts:s0
+genfscon sysfs /board_properties/virtualkeys.ist30xx_ts_input		u:object_r:sysfs_virtualkeys:s0
+
+# Vibrator
+genfscon sysfs /devices/platform/soc/soc:vibrator_gpio/leds/vibrator	u:object_r:sysfs_vibrator:s0

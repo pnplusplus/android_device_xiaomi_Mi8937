@@ -1,0 +1,162 @@
+service vendor.xiaomi_device_script /vendor/bin/init.xiaomi.device.sh
+    class early_hal
+    user root
+    group root
+    oneshot
+
+# Audio
+on property:ro.vendor.xiaomi.device=land
+    setprop vendor.audio.mixer_xml.path /vendor/etc/land_mixer_paths_qrd_sku1.xml
+    setprop vendor.audio.platform_info_xml.path /vendor/etc/land_audio_platform_info_intcodec.xml
+on property:ro.vendor.xiaomi.device=prada
+    setprop vendor.audio.mixer_xml.path /vendor/etc/prada_mixer_paths_mtp.xml
+    setprop vendor.audio.platform_info_xml.path /vendor/etc/prada_audio_platform_info_intcodec.xml
+on property:ro.vendor.xiaomi.device=riva
+    setprop vendor.audio.mixer_xml.path /vendor/etc/riva_mixer_paths_qrd_sku2.xml
+    setprop vendor.audio.platform_info_xml.path /vendor/etc/riva_oreo_audio_platform_info_intcodec.xml
+on property:ro.vendor.xiaomi.device=rolex
+    setprop vendor.audio.mixer_xml.path /vendor/etc/rolex_mixer_paths_qrd_sku2.xml
+    setprop vendor.audio.platform_info_xml.path /vendor/etc/riva_oreo_audio_platform_info_intcodec.xml
+on property:ro.vendor.xiaomi.device=santoni
+    setprop vendor.audio.mixer_xml.path /vendor/etc/santoni_mixer_paths_qrd_sku1.xml
+    setprop vendor.audio.platform_info_xml.path /vendor/etc/santoni_audio_platform_info_intcodec.xml
+on property:ro.vendor.xiaomi.series=ulysse
+    setprop vendor.audio.mixer_xml.path /vendor/etc/ulysse_mixer_paths_mtp.xml
+    setprop vendor.audio.platform_info_xml.path /vendor/etc/ulysse_audio_platform_info_intcodec.xml
+
+# Baseband
+on property:ro.vendor.xiaomi.device=santoni
+    enable vendor.baseband-sh
+on property:ro.vendor.xiaomi.series=wt8917
+    enable vendor.baseband-sh
+
+# Camera
+service vendor.qcamerasvr /odm/bin/mm-qcamera-daemon
+    override
+    class late_start
+    user camera
+    group camera system inet input graphics
+
+on property:ro.vendor.xiaomi.device=land
+    setprop ro.hardware.camera land
+on property:ro.vendor.xiaomi.device=prada
+    setprop ro.hardware.camera prada
+on property:ro.vendor.xiaomi.device=santoni
+    setprop ro.hardware.camera wingtech
+on property:ro.vendor.xiaomi.series=ulysse
+    setprop ro.hardware.camera ulysse
+on property:ro.vendor.xiaomi.series=wt8917
+    setprop ro.hardware.camera wingtech
+
+# Fingerprint
+service vendor.goodix_script /vendor/bin/init.goodix.sh
+    class late_start
+    user system
+    group system
+    oneshot
+    disabled
+
+on property:ro.vendor.xiaomi.device=prada
+    enable vendor.goodix_script
+on property:ro.vendor.xiaomi.series=wt8937
+    enable vendor.goodix_script
+
+# HVDCP
+on property:ro.vendor.xiaomi.series=wt8917
+    stop vendor.hvdcp_opti
+on property:ro.vendor.xiaomi.series=ulysse
+    stop vendor.hvdcp_opti
+
+# IR
+on init
+    # LED
+    chown system system /sys/class/leds/infrared/transmit
+    chown system system /sys/class/leds/infrared/brightness
+    # lirc
+    chown system system /dev/lirc0
+    # spidev
+    chown system system /dev/spidev7.1
+
+on property:ro.vendor.xiaomi.device=rolex
+    setprop ro.hardware.consumerir led
+on property:ro.vendor.xiaomi.series=wt8937
+    setprop ro.hardware.consumerir led
+on property:ro.vendor.xiaomi.device=prada
+    setprop ro.hardware.consumerir lirc
+on property:ro.vendor.xiaomi.series=ulysse
+    setprop ro.hardware.consumerir lirc
+on property:ro.vendor.xiaomi.device=riva
+    setprop ro.hardware.consumerir spidev
+
+# LiveDisplay
+on boot
+    chown root root /sys/devices/virtual/graphics/fb0/hbm
+    chmod 0000 /sys/devices/virtual/graphics/fb0/hbm
+
+# OverlayFS
+on post-fs
+    # Netmgrd
+    mount overlay overlay /vendor/etc/data ro lowerdir=/vendor/overlayfs/common/etc/data/:/vendor/etc/data
+
+on property:ro.vendor.xiaomi.device=land
+    # General
+    mount overlay overlay /odm/bin ro lowerdir=/odm/overlayfs/land/bin/:/odm/bin
+    mount overlay overlay /odm/lib ro lowerdir=/odm/overlayfs/land/lib/:/odm/lib
+    mount overlay overlay /odm/lib64 ro lowerdir=/odm/overlayfs/land/lib64/:/odm/lib64
+    # Camera
+    mount overlay overlay /odm/etc/camera ro lowerdir=/odm/overlayfs/land/etc/camera/:/odm/etc/camera
+    # Sensor
+    mount overlay overlay /vendor/etc/sensors ro lowerdir=/vendor/overlayfs/wt8937/etc/sensors/:/vendor/etc/sensors
+
+on property:ro.vendor.xiaomi.device=prada
+    # General
+    mount overlay overlay /odm/bin ro lowerdir=/odm/overlayfs/prada/bin/:/odm/bin
+    mount overlay overlay /odm/lib64 ro lowerdir=/odm/overlayfs/prada/lib64/:/odm/lib64
+    # Sensor
+    mount overlay overlay /vendor/etc/sensors ro lowerdir=/vendor/overlayfs/prada/etc/sensors/:/vendor/etc/sensors
+
+on property:ro.vendor.xiaomi.device=riva
+    # General
+    mount overlay overlay /odm/bin ro lowerdir=/odm/overlayfs/wt8937-n-camera/bin/:/odm/bin
+    mount overlay overlay /odm/lib ro lowerdir=/odm/overlayfs/riva/lib/:/odm/overlayfs/wt8937-n-camera/lib/:/odm/lib
+    # Camera
+    mount overlay overlay /odm/etc/camera ro lowerdir=/odm/overlayfs/riva/etc/camera/:/odm/etc/camera
+    # Sensor
+    mount overlay overlay /vendor/etc/sensors ro lowerdir=/vendor/overlayfs/riva/etc/sensors/:/vendor/etc/sensors
+
+on property:ro.vendor.xiaomi.device=rolex
+    # General
+    mount overlay overlay /odm/bin ro lowerdir=/odm/overlayfs/wt8937-n-camera/bin/:/odm/bin
+    mount overlay overlay /odm/lib ro lowerdir=/odm/overlayfs/rolex/lib/:/odm/overlayfs/wt8937-n-camera/lib/:/odm/lib
+    # Camera
+    mount overlay overlay /odm/etc/camera ro lowerdir=/odm/overlayfs/rolex/etc/camera/:/odm/etc/camera
+    # Sensor
+    mount overlay overlay /vendor/etc/sensors ro lowerdir=/vendor/overlayfs/rolex/etc/sensors/:/vendor/etc/sensors
+
+on property:ro.vendor.xiaomi.device=santoni
+    # General
+    mount overlay overlay /odm/bin ro lowerdir=/odm/overlayfs/santoni/bin/:/odm/overlayfs/wt8937-n-camera/bin/:/odm/bin
+    mount overlay overlay /odm/lib ro lowerdir=/odm/overlayfs/santoni/lib/:/odm/overlayfs/wt8937-n-camera/lib/:/odm/lib
+    mount overlay overlay /odm/lib64 ro lowerdir=/odm/overlayfs/santoni/lib64/:/odm/lib64
+    # Camera
+    mount overlay overlay /odm/etc/camera ro lowerdir=/odm/overlayfs/santoni/etc/camera/:/odm/etc/camera
+    # Sensor
+    mount overlay overlay /vendor/etc/sensors ro lowerdir=/vendor/overlayfs/wt8937/etc/sensors/:/vendor/etc/sensors
+
+on property:ro.vendor.xiaomi.device=ugg
+    # General
+    mount overlay overlay /odm/bin ro lowerdir=/odm/overlayfs/ulysse/bin/:/odm/bin
+    mount overlay overlay /odm/lib ro lowerdir=/odm/overlayfs/ugg/lib/:/odm/overlayfs/ulysse/lib/:/odm/lib
+    # Camera
+    mount overlay overlay /odm/etc/camera ro lowerdir=/odm/overlayfs/ugg/etc/camera/:/odm/overlayfs/ulysse/etc/camera/:/odm/etc/camera
+    # Sensor
+    mount overlay overlay /vendor/etc/sensors ro lowerdir=/vendor/overlayfs/ulysse/etc/sensors/:/vendor/etc/sensors
+
+on property:ro.vendor.xiaomi.device=ugglite
+    # General
+    mount overlay overlay /odm/bin ro lowerdir=/odm/overlayfs/ulysse/bin/:/odm/bin
+    mount overlay overlay /odm/lib ro lowerdir=/odm/overlayfs/ugglite/lib/:/odm/overlayfs/ulysse/lib/:/odm/lib
+    # Camera
+    mount overlay overlay /odm/etc/camera ro lowerdir=/odm/overlayfs/ugglite/etc/camera/:/odm/overlayfs/ulysse/etc/camera/:/odm/etc/camera
+    # Sensor
+    mount overlay overlay /vendor/etc/sensors ro lowerdir=/vendor/overlayfs/ulysse/etc/sensors/:/vendor/etc/sensors

@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-COMMON_PATH := device/xiaomi/mithorium-common
+DEVICE_PATH := device/xiaomi/Mi8937
+USES_DEVICE_XIAOMI_MI8937 := true
 
 # Architecture
 TARGET_ARCH := arm64
@@ -18,6 +19,13 @@ TARGET_2ND_ARCH_VARIANT := armv8-a
 TARGET_2ND_CPU_ABI := armeabi-v7a
 TARGET_2ND_CPU_ABI2 := armeabi
 TARGET_2ND_CPU_VARIANT := cortex-a53
+
+# Asserts
+ifeq ($(PRODUCT_HARDWARE),Mi8917)
+TARGET_OTA_ASSERT_DEVICE := ugglite,rolex,riva,Mi8917
+else ifeq ($(PRODUCT_HARDWARE),Mi8937)
+TARGET_OTA_ASSERT_DEVICE := land,santoni,ugg,Mi8937
+endif
 
 # Build
 BUILD_BROKEN_DUP_RULES := true
@@ -39,6 +47,22 @@ TARGET_KERNEL_CONFIG := \
     vendor/xiaomi/common.config \
     vendor/xiaomi/feature/android-12.config \
     vendor/xiaomi/feature/lmkd.config
+
+ifeq ($(PRODUCT_HARDWARE),Mi8917)
+TARGET_KERNEL_CONFIG += \
+    vendor/xiaomi/msm8937/common.config \
+    vendor/xiaomi/msm8937/mi8917.config \
+    vendor/xiaomi/feature/lineageos.config
+else
+TARGET_KERNEL_CONFIG += \
+    vendor/xiaomi/msm8937/common.config \
+    vendor/xiaomi/msm8937/mi8937_exclude_mi8917.config \
+    vendor/xiaomi/feature/lineageos.config
+endif
+
+ifeq ($(MI8937_CAM_USE_LATEST_CAMERA_STACK),true)
+TARGET_KERNEL_CONFIG += vendor/xiaomi/msm8937/optional/latest-camera-stack.config
+endif
 
 # ANT
 BOARD_ANT_WIRELESS_DEVICE := "vfs-prerelease"
@@ -80,11 +104,16 @@ TARGET_NO_BOOTLOADER := true
 BOARD_QTI_CAMERA_32BIT_ONLY := true
 TARGET_SUPPORT_HAL1 := false
 TARGET_TS_MAKEUP := true
+#MI8937_CAM_USE_LATEST_CAMERA_STACK := true
 
 # Display
+TARGET_SCREEN_DENSITY := 280
 TARGET_USES_GRALLOC1 := true
 TARGET_USES_HWC2 := true
 TARGET_USES_ION := true
+
+# Filesystem
+TARGET_FS_CONFIG_GEN += $(DEVICE_PATH)/config.fs
 
 # FM
 BOARD_HAVE_QCOM_FM := true
@@ -95,7 +124,7 @@ BOARD_VENDOR_QCOM_GPS_LOC_API_HARDWARE := default
 LOC_HIDL_VERSION := 4.0
 
 # Filesystem
-TARGET_FS_CONFIG_GEN := $(COMMON_PATH)/config.fs
+TARGET_FS_CONFIG_GEN := $(DEVICE_PATH)/config.fs
 
 # GRF/VF
 BOARD_SHIPPING_API_LEVEL := 30
@@ -104,23 +133,31 @@ BOARD_SHIPPING_API_LEVEL := 30
 TARGET_HEALTH_CHARGING_CONTROL_CHARGING_PATH := /sys/class/power_supply/battery/battery_charging_enabled
 
 # HIDL
-DEVICE_MANIFEST_FILE := $(COMMON_PATH)/manifest.xml
+DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/manifest.xml
 ifneq ($(TARGET_HAS_NO_CONSUMERIR),true)
-DEVICE_MANIFEST_FILE += $(COMMON_PATH)/configs/manifest/consumerir.xml
+DEVICE_MANIFEST_FILE += $(DEVICE_PATH)/configs/manifest/consumerir.xml
 endif
 ifneq ($(TARGET_USES_DEVICE_SPECIFIC_GATEKEEPER),true)
-DEVICE_MANIFEST_FILE += $(COMMON_PATH)/configs/manifest/gatekeeper.xml
+DEVICE_MANIFEST_FILE += $(DEVICE_PATH)/configs/manifest/gatekeeper.xml
 endif
 ifneq ($(TARGET_USES_DEVICE_SPECIFIC_KEYMASTER),true)
-DEVICE_MANIFEST_FILE += $(COMMON_PATH)/configs/manifest/keymaster.xml
+DEVICE_MANIFEST_FILE += $(DEVICE_PATH)/configs/manifest/keymaster.xml
 endif
-DEVICE_MATRIX_FILE := $(COMMON_PATH)/compatibility_matrix.xml
+DEVICE_MATRIX_FILE := $(DEVICE_PATH)/compatibility_matrix.xml
 
 # Init
-TARGET_INIT_VENDOR_LIB ?= //$(COMMON_PATH):init_xiaomi_mithorium
-TARGET_RECOVERY_DEVICE_MODULES ?= init_xiaomi_mithorium
+TARGET_INIT_VENDOR_LIB := //$(DEVICE_PATH):init_xiaomi_mi8937
+TARGET_RECOVERY_DEVICE_MODULES := init_xiaomi_mi8937
 
 # Partitions
+SSI_PARTITIONS := product system system_ext
+TREBLE_PARTITIONS := odm vendor
+ALL_PARTITIONS := $(SSI_PARTITIONS) $(TREBLE_PARTITIONS)
+
+$(foreach p, $(call to-upper, $(ALL_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_FILE_SYSTEM_TYPE := ext4) \
+    $(eval TARGET_COPY_OUT_$(p) := $(call to-lower, $(p))))
+
 TARGET_COPY_OUT_VENDOR := vendor
 BOARD_FLASH_BLOCK_SIZE := 131072 # (BOARD_KERNEL_PAGESIZE * 64)
 BOARD_PERSISTIMAGE_PARTITION_SIZE := 33554432
@@ -129,7 +166,42 @@ BOARD_ROOT_EXTRA_SYMLINKS := \
     /vendor/firmware_mnt:/firmware \
     /mnt/vendor/persist:/persist
 
+BOARD_USES_METADATA_PARTITION := true
+
+BOARD_BOOTIMAGE_PARTITION_SIZE := 67108864
+BOARD_RECOVERYIMAGE_PARTITION_SIZE := 67108864
+BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
+BOARD_CACHEIMAGE_PARTITION_SIZE := 268435456
+BOARD_USERDATAIMAGE_PARTITION_SIZE := 10332634112 # 10332650496 - 16384
+
+# Partitions - dynamic
+BOARD_SUPER_PARTITION_BLOCK_DEVICES := cust system
+BOARD_SUPER_PARTITION_METADATA_DEVICE := system
+BOARD_SUPER_PARTITION_CUST_DEVICE_SIZE := 536870912
+BOARD_SUPER_PARTITION_SYSTEM_DEVICE_SIZE := 3221225472
+BOARD_SUPER_PARTITION_SIZE := $(shell expr $(BOARD_SUPER_PARTITION_CUST_DEVICE_SIZE) + $(BOARD_SUPER_PARTITION_SYSTEM_DEVICE_SIZE) )
+
+BOARD_SUPER_PARTITION_GROUPS := mi8937_dynpart
+BOARD_MI8937_DYNPART_SIZE := $(shell expr $(BOARD_SUPER_PARTITION_SIZE) - 4194304 )
+BOARD_MI8937_DYNPART_PARTITION_LIST := $(ALL_PARTITIONS)
+
+# Partitions - reserved size
+$(foreach p, $(call to-upper, $(SSI_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_EXTFS_INODE_COUNT := -1))
+$(foreach p, $(call to-upper, $(TREBLE_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_EXTFS_INODE_COUNT := 2048))
+
+$(foreach p, $(call to-upper, $(SSI_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_PARTITION_RESERVED_SIZE := 83886080)) # 80 MB
+$(foreach p, $(call to-upper, $(TREBLE_PARTITIONS)), \
+    $(eval BOARD_$(p)IMAGE_PARTITION_RESERVED_SIZE := 41943040)) # 40 MB
+
+ifneq ($(WITH_GMS),true)
+BOARD_PRODUCTIMAGE_PARTITION_RESERVED_SIZE := 1073741824 # 1024 MB
+endif
+
 # Power
+TARGET_TAP_TO_WAKE_NODE := "/proc/sys/dev/xiaomi_msm8937_touchscreen/enable_dt2w"
 TARGET_USES_INTERACTION_BOOST := true
 
 # Platform
@@ -138,25 +210,32 @@ TARGET_BOARD_PLATFORM := msm8937
 TARGET_ENFORCES_QSSI := true
 
 # Properties
-TARGET_ODM_PROP += $(COMMON_PATH)/odm.prop
-TARGET_SYSTEM_PROP += $(COMMON_PATH)/system.prop
-TARGET_SYSTEM_EXT_PROP += $(COMMON_PATH)/system_ext.prop
-TARGET_VENDOR_PROP += $(COMMON_PATH)/vendor.prop
+TARGET_ODM_PROP += $(DEVICE_PATH)/odm.prop
+TARGET_SYSTEM_PROP += $(DEVICE_PATH)/system.prop
+TARGET_SYSTEM_EXT_PROP += $(DEVICE_PATH)/system_ext.prop
+TARGET_VENDOR_PROP += $(DEVICE_PATH)/vendor.prop
 
 # Recovery
+TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/fstab.qcom
 TARGET_USERIMAGES_USE_F2FS := true
 TARGET_USERIMAGES_USE_EXT4 := true
 
 # RIL
 ENABLE_VENDOR_RIL_SERVICE := true
 
+# Security patch level
+VENDOR_SECURITY_PATCH := 2017-04-01
+
 # SELinux
 include device/qcom/sepolicy-legacy-um/SEPolicy.mk
-BOARD_VENDOR_SEPOLICY_DIRS += $(COMMON_PATH)/sepolicy/vendor
-SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += $(COMMON_PATH)/sepolicy/public
-SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(COMMON_PATH)/sepolicy/private
+BOARD_ODM_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/odm
+BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/vendor
+BOARD_ODM_SEPOLICY_DIRS += $(DEVICE_PATH)/biometrics/sepolicy-odm
+BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/biometrics/sepolicy
+SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/public
+SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/private
 ifeq (true,$(call math_lt,$(PRODUCT_SHIPPING_API_LEVEL),28))
-BOARD_VENDOR_SEPOLICY_DIRS += $(COMMON_PATH)/sepolicy/legacy/vendor
+BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/legacy/vendor
 endif
 
 # Treble
@@ -178,4 +257,4 @@ WIFI_HIDL_UNIFIED_SUPPLICANT_SERVICE_RC_ENTRY := true
 WPA_SUPPLICANT_VERSION := VER_0_8_X
 
 # Inherit from the proprietary version
-include vendor/xiaomi/mithorium-common/BoardConfigVendor.mk
+include vendor/xiaomi/Mi8937/BoardConfigVendor.mk

@@ -25,6 +25,12 @@ value:2908
 [AID_VENDOR_QTR]
 value:2909
 
+[odm/overlayfs/*/bin/*]
+mode: 0755
+user: AID_ROOT
+group: AID_SHELL
+caps: 0
+
 [vendor/bin/wcnss_filter]
 mode: 0755
 user: AID_BLUETOOTH

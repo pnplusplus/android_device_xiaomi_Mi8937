@@ -8,6 +8,9 @@
 
 set -e
 
+DEVICE=Mi8937
+VENDOR=xiaomi
+
 # Load extract_utils and do some sanity checks
 MY_DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "${MY_DIR}" ]]; then MY_DIR="${PWD}"; fi
@@ -24,8 +27,6 @@ source "${HELPER}"
 # Default to sanitizing the vendor folder before extraction
 CLEAN_VENDOR=true
 
-ONLY_COMMON=
-ONLY_TARGET=
 KANG=
 SECTION=
 
@@ -33,14 +34,6 @@ SETUP_MAKEFILES_ARGS=
 
 while [ "${#}" -gt 0 ]; do
     case "${1}" in
-        --only-common )
-                ONLY_COMMON=true
-                SETUP_MAKEFILES_ARGS+=" ${1}"
-                ;;
-        --only-target )
-                ONLY_TARGET=true
-                SETUP_MAKEFILES_ARGS+=" ${1}"
-                ;;
         -n | --no-cleanup )
                 CLEAN_VENDOR=false
                 ;;
@@ -66,7 +59,77 @@ if [ -z "${DEVICE_PARENT}" ]; then
     DEVICE_PARENT="."
 fi
 
+function patchelf_add_needed() {
+    local LOCAL_PATCHELF="${PATCHELF}"
+    [ -x "${3}" ] && LOCAL_PATCHELF="${3}"
+    if ! "${LOCAL_PATCHELF}" --print-needed "${2}" | grep -q "${1}"; then
+        "${LOCAL_PATCHELF}" --add-needed "${1}" "${2}"
+    fi
+}
+
 function blob_fixup() {
+    # Camera
+    if [[ "${1}" =~ ^odm/overlayfs/.*/lib/libmmcamera.*\.so$ ]]; then
+        sed -i 's|data/misc/camera|data/vendor/qcam|g;s|libgui.so|libwui.so|g' "${2}"
+    fi
+
+    case "${1}" in
+        # Camera
+        odm/overlayfs/*/bin/mm-qcamera-daemon)
+            sed -i 's|data/misc/camera|data/vendor/qcam|g' "${2}"
+            if [ "${1}" == "odm/overlayfs/land/bin/mm-qcamera-daemon" ]; then
+                patchelf_add_needed "libshim_mutexdestroy.so" "${2}"
+                patchelf_add_needed "libshim_pthreadts.so" "${2}"
+            fi
+            ;;
+        odm/overlayfs/*/lib/libmmcamera_ppeiscore.so)
+            patchelf_add_needed "libshims_ui.so"
+            ;;
+        odm/overlayfs/*/lib/libmmcamera2_sensor_modules.so)
+            sed -i 's|/system/etc/camera/|////odm/etc/camera/|g' "${2}"
+            sed -i 's|/system/vendor/lib|////vendor/odm/lib|g' "${2}"
+            ;;
+        odm/overlayfs/*/lib/libmmcamera2_stats_modules.so)
+            "${PATCHELF}" --replace-needed "libandroid.so" "libshims_android.so" "${2}"
+            ;;
+        odm/overlayfs/*/lib/libmmsw_platform.so|odm/overlayfs/*/lib/libmmsw_detail_enhancement.so)
+            "${PATCHELF}" --remove-needed "libbinder.so" "${2}"
+            sed -i 's|libgui.so|libwui.so|g' "${2}"
+            ;;
+        odm/overlayfs/*/lib/libmpbase.so)
+            "${PATCHELF}" --replace-needed "libandroid.so" "libshims_android.so" "${2}"
+            ;;
+        # Fingerprint (Legacy Goodix)
+        odm/overlayfs/*/bin/gx_fpcmd|odm/overlayfs/*/bin/gx_fpd)
+            "${PATCHELF_0_17_2}" --remove-needed "libbacktrace.so" "${2}"
+            "${PATCHELF_0_17_2}" --remove-needed "libunwind.so" "${2}"
+            patchelf_add_needed "libfakelogprint.so" "${2}" "${PATCHELF_0_17_2}"
+            ;;
+        odm/overlayfs/*/lib64/libfpservice.so)
+            patchelf_add_needed "libbinder_shim.so" "${2}" "${PATCHELF_0_17_2}"
+            ;;
+        odm/overlayfs/*/lib64/hw/fingerprint.*_goodix.so)
+            sed -i 's|libandroid_runtime.so|libshims_android.so\x00\x00|g' "${2}"
+            patchelf_add_needed "libfakelogprint.so" "${2}" "${PATCHELF_0_17_2}"
+            ;;
+        odm/overlayfs/*/lib64/hw/gxfingerprint.*.so)
+            patchelf_add_needed "libfakelogprint.so" "${2}" "${PATCHELF_0_17_2}"
+            ;;
+        # Fingerprint (ugg)
+        odm/lib64/lib_fpc_tac_shared.so)
+            patchelf_add_needed "libbinder_shim.so" "${2}" "${PATCHELF_0_17_2}"
+            ;;
+        odm/lib64/libgf_ca.so)
+            sed -i 's|/system/etc/firmware|////odm/firmware/ugg|g' "${2}"
+            ;;
+        odm/lib64/libvendor.goodix.hardware.fingerprint@1.0.so)
+            "${PATCHELF_0_17_2}" --replace-needed "libhidlbase.so" "libhidlbase-v32.so" "${2}"
+            ;;
+        odm/lib64/libvendor.goodix.hardware.fingerprint@1.0-service.so)
+            "${PATCHELF_0_17_2}" --remove-needed "libprotobuf-cpp-lite.so" "${2}"
+            ;;
+    esac
+
     case "${1}" in
         product/etc/permissions/vendor.qti.hardware.data.connection-V1.0-java.xml \
         | product/etc/permissions/vendor.qti.hardware.data.connection-V1.1-java.xml)
@@ -80,33 +143,14 @@ function blob_fixup() {
     esac
 }
 
-if [ -z "${ONLY_TARGET}" ]; then
-    # Initialize the helper for common device
-    setup_vendor "${DEVICE_COMMON}" "${VENDOR}" "${ANDROID_ROOT}" true "${CLEAN_VENDOR}"
+# Initialize the helper
+setup_vendor "${DEVICE}" "${VENDOR}" "${ANDROID_ROOT}" false "${CLEAN_VENDOR}"
 
-    extract "${MY_DIR}/proprietary-files-qc-sys.txt" "${SRC}" "${KANG}" --section "${SECTION}"
-    extract "${MY_DIR}/proprietary-files-qc-vndr.txt" "${SRC}" "${KANG}" --section "${SECTION}"
-    extract "${MY_DIR}/proprietary-files-qc-vndr-32.txt" "${SRC}" "${KANG}" --section "${SECTION}"
-fi
-
-if [ -z "${ONLY_COMMON}" ] && [ -s "${MY_DIR}/../${DEVICE_PARENT}/${DEVICE}/proprietary-files.txt" ]; then
-    # Reinitialize the helper for device
-    source "${MY_DIR}/../${DEVICE_PARENT}/${DEVICE}/extract-files.sh"
-    setup_vendor "${DEVICE}" "${VENDOR}" "${ANDROID_ROOT}" false "${CLEAN_VENDOR}"
-
-    for proprietary_files_txt in ${MY_DIR}/../${DEVICE_PARENT}/${DEVICE}/proprietary-files*.txt; do
-        extract "$proprietary_files_txt" "${SRC}" "${KANG}" --section "${SECTION}"
-    done
-fi
-
-if [ -z "${ONLY_COMMON}" ] && [ -s "${MY_DIR}/../${DEVICE_SPECIFIED_COMMON}/proprietary-files.txt" ]; then
-    # Reinitialize the helper for device specified common
-    source "${MY_DIR}/../${DEVICE_SPECIFIED_COMMON}/extract-files.sh"
-    setup_vendor "${DEVICE_SPECIFIED_COMMON}" "${VENDOR}" "${ANDROID_ROOT}" false "${CLEAN_VENDOR}"
-
-    for proprietary_files_txt in ${MY_DIR}/../${DEVICE_SPECIFIED_COMMON}/proprietary-files*.txt; do
-        extract "$proprietary_files_txt" "${SRC}" "${KANG}" --section "${SECTION}"
-    done
-fi
+extract "${MY_DIR}/proprietary-files.txt" "${SRC}" "${KANG}" --section "${SECTION}"
+extract "${MY_DIR}/proprietary-files-camera.txt" "${SRC}" "${KANG}" --section "${SECTION}"
+extract "${MY_DIR}/proprietary-files-device.txt" "${SRC}" "${KANG}" --section "${SECTION}"
+extract "${MY_DIR}/proprietary-files-qc-sys.txt" "${SRC}" "${KANG}" --section "${SECTION}"
+extract "${MY_DIR}/proprietary-files-qc-vndr.txt" "${SRC}" "${KANG}" --section "${SECTION}"
+extract "${MY_DIR}/proprietary-files-qc-vndr-32.txt" "${SRC}" "${KANG}" --section "${SECTION}"
 
 "${MY_DIR}/setup-makefiles.sh" ${SETUP_MAKEFILES_ARGS}
