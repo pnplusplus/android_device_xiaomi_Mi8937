@@ -13,7 +13,6 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/product_launched_with_n_mr1.mk
 $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
 # Inherit from Mi8937 device
-PRODUCT_HARDWARE := Mi8937
 $(call inherit-product, device/xiaomi/Mi8937/device.mk)
 
 # Overlays
@@ -22,6 +21,9 @@ DEVICE_PACKAGE_OVERLAYS += \
 
 PRODUCT_PACKAGES += \
     xiaomi_prada_overlay_lineage \
+    xiaomi_riva_overlay_lineage \
+    xiaomi_rolex_overlay_lineage \
+    xiaomi_ulysse_overlay_lineage \
     xiaomi_ulysse_overlay_lineage \
     xiaomi_wt8937_overlay_lineage
 

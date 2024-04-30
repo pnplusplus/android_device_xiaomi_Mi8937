@@ -18,6 +18,8 @@ vendor/etc/diracmobile.config|b99e9492e77e52ca3a511feae0409d59f6aebb87
 vendor/bin/hvdcp_opti
 
 # Firmware (GPU) - from PAN
+vendor/firmware/a300_pfp.fw
+vendor/firmware/a300_pm4.fw
 vendor/firmware/a506_zap.b00
 vendor/firmware/a506_zap.b01
 vendor/firmware/a506_zap.b02

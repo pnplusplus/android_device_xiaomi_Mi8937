@@ -5,7 +5,6 @@
 #
 
 DEVICE_PATH := device/xiaomi/Mi8937
-USES_DEVICE_XIAOMI_MI8937 := true
 
 # Architecture
 TARGET_ARCH := arm64
@@ -21,11 +20,7 @@ TARGET_2ND_CPU_ABI2 := armeabi
 TARGET_2ND_CPU_VARIANT := cortex-a53
 
 # Asserts
-ifeq ($(PRODUCT_HARDWARE),Mi8917)
-TARGET_OTA_ASSERT_DEVICE := ugglite,rolex,riva,Mi8917
-else ifeq ($(PRODUCT_HARDWARE),Mi8937)
-TARGET_OTA_ASSERT_DEVICE := land,santoni,ugg,Mi8937
-endif
+TARGET_OTA_ASSERT_DEVICE := mi8937,land,santoni,ugglite,ugg,rolex,riva,Mi8937
 
 # Build
 BUILD_BROKEN_DUP_RULES := true
@@ -46,19 +41,10 @@ TARGET_KERNEL_CONFIG := \
     vendor/msm8937-perf_defconfig \
     vendor/xiaomi/common.config \
     vendor/xiaomi/feature/android-12.config \
-    vendor/xiaomi/feature/lmkd.config
-
-ifeq ($(PRODUCT_HARDWARE),Mi8917)
-TARGET_KERNEL_CONFIG += \
+    vendor/xiaomi/feature/lmkd.config \
     vendor/xiaomi/msm8937/common.config \
-    vendor/xiaomi/msm8937/mi8917.config \
+    vendor/xiaomi/msm8937/mi8937.config \
     vendor/xiaomi/feature/lineageos.config
-else
-TARGET_KERNEL_CONFIG += \
-    vendor/xiaomi/msm8937/common.config \
-    vendor/xiaomi/msm8937/mi8937_exclude_mi8917.config \
-    vendor/xiaomi/feature/lineageos.config
-endif
 
 ifeq ($(MI8937_CAM_USE_LATEST_CAMERA_STACK),true)
 TARGET_KERNEL_CONFIG += vendor/xiaomi/msm8937/optional/latest-camera-stack.config

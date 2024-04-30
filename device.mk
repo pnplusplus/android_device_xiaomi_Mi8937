@@ -29,19 +29,15 @@ DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay-lineage
 PRODUCT_ENFORCE_RRO_TARGETS := *
 PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += $(LOCAL_PATH)/overlay/packages/apps/CarrierConfig
 
-ifeq ($(PRODUCT_HARDWARE),Mi8917)
-PRODUCT_PACKAGES += \
-    xiaomi_rolex_overlay \
-    xiaomi_riva_overlay \
-    xiaomi_ugglite_overlay
-else ifeq ($(PRODUCT_HARDWARE),Mi8937)
 PRODUCT_PACKAGES += \
     xiaomi_prada_overlay \
     xiaomi_prada_overlay_Settings \
+    xiaomi_riva_overlay \
+    xiaomi_rolex_overlay \
     xiaomi_ugg_overlay \
+    xiaomi_ugglite_overlay \
     xiaomi_wt8937_overlay \
     xiaomi_wt8937_overlay_Settings
-endif
 
 # APEX
 OVERRIDE_TARGET_FLATTEN_APEX := true
@@ -168,13 +164,9 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/blankfile:$(TARGET_COPY_OUT_ODM)/etc/camera/.placeholder
 
 PRODUCT_PACKAGES += \
+    camera.land \
     camera.ulysse \
     camera.wingtech
-
-ifeq ($(PRODUCT_HARDWARE),Mi8937)
-PRODUCT_PACKAGES += \
-    camera.land
-endif
 
 # Charger
 PRODUCT_PACKAGES += \
@@ -240,14 +232,12 @@ PRODUCT_PACKAGES += \
     resize2fs_ramdisk
 
 # Fingerprint
-ifeq ($(PRODUCT_HARDWARE),Mi8937)
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/blankfile:$(TARGET_COPY_OUT_ODM)/bin/gx_fpd
 
 PRODUCT_PACKAGES += \
     android.hardware.biometrics.fingerprint@2.1-service.xiaomi_ulysse \
     android.hardware.biometrics.fingerprint@2.1-service.xiaomi_wt8937
-endif
 
 # FM
 PRODUCT_PACKAGES += \
@@ -403,10 +393,8 @@ PRODUCT_COPY_FILES += \
     system/core/libprocessgroup/profiles/task_profiles_28.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json
 
 # Recovery
-ifeq ($(PRODUCT_HARDWARE),Mi8937)
 PRODUCT_COPY_FILES += \
     vendor/xiaomi/Mi8937/proprietary/vendor/bin/hvdcp_opti:$(TARGET_COPY_OUT_RECOVERY)/root/system/bin/hvdcp_opti
-endif
 
 # QMI
 PRODUCT_PACKAGES += \
@@ -455,13 +443,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     fstab.qcom_ramdisk \
     init.baseband.sh \
+    init.goodix.sh \
     init.xiaomi.device.rc \
     init.xiaomi.device.sh
-
-ifeq ($(PRODUCT_HARDWARE),Mi8937)
-PRODUCT_PACKAGES += \
-    init.goodix.sh
-endif
 
 # Sensors
 PRODUCT_PACKAGES += \
@@ -471,20 +455,16 @@ PRODUCT_PACKAGES += \
 
 # Shims
 PRODUCT_PACKAGES += \
+    libbinder_shim \
+    libc_mutexdestroy_shim \
+    libc_pthreadts_shim \
+    libfakelogprint \
     libshims_android \
     libshims_ui \
     libwui
 
-ifeq ($(PRODUCT_HARDWARE),Mi8937)
-PRODUCT_PACKAGES += \
-    libbinder_shim \
-    libc_mutexdestroy_shim \
-    libc_pthreadts_shim \
-    libfakelogprint
-
 PRODUCT_COPY_FILES += \
     prebuilts/vndk/v32/arm64/arch-arm64-armv8-a/shared/vndk-sp/libhidlbase.so:$(TARGET_COPY_OUT_ODM)/lib64/libhidlbase-v32.so
-endif
 
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += \
@@ -546,13 +526,9 @@ PRODUCT_PACKAGES += \
     hostapd \
     wificond \
     WifiOverlay \
+    WifiOverlay_prada \
     wpa_supplicant \
     wpa_supplicant.conf
-
-ifeq ($(PRODUCT_HARDWARE),Mi8937)
-PRODUCT_PACKAGES += \
-    WifiOverlay_prada
-endif
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/wifi/p2p_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/p2p_supplicant_overlay.conf \
@@ -563,8 +539,4 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/wifi/WCNSS_qcom_cfg.ini:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/WCNSS_qcom_cfg.ini
 
 # Inherit the proprietary files
-ifeq ($(PRODUCT_HARDWARE),Mi8917)
-$(call inherit-product, vendor/xiaomi/Mi8917/Mi8917-vendor.mk)
-else ifeq ($(PRODUCT_HARDWARE),Mi8937)
 $(call inherit-product, vendor/xiaomi/Mi8937/Mi8937-vendor.mk)
-endif
