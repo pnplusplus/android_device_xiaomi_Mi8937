@@ -13,10 +13,71 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// libandroid
+cc_library_shared {
+    name: "libshims_android",
+    proprietary: true,
+    defaults: ["hidl_defaults"],
+    srcs: [
+        "libshims_android.cpp",
+    ],
+    cflags: [
+        "-Werror",
+        "-Wextra",
+        "-Wall",
+    ],
+    shared_libs: [
+        "libutils",
+    ],
+}
+
+// libfakelogprint
 cc_library_shared {
     name: "libfakelogprint",
     srcs: ["libfakelogprint.cpp"],
     shared_libs: ["liblog"],
     compile_multilib: "64",
     vendor: true
+}
+
+// libgui
+cc_library_shared {
+    name: "libshims_gui",
+    proprietary: true,
+    defaults: ["hidl_defaults"],
+    srcs: [
+        "libshims_gui.cpp",
+    ],
+    cflags: [
+        "-Werror",
+        "-Wextra",
+        "-Wall",
+    ],
+    shared_libs: [
+        "libgui_vendor",
+    ],
+    include_dirs: [
+        "frameworks/native/include",
+    ],
+}
+
+// libshim_camera
+cc_library_shared {
+    name: "libshims_ui",
+    srcs: ["libshims_ui.cpp"],
+    shared_libs: ["libui"],
+    vendor: true,
+    compile_multilib: "32",
+}
+
+cc_library_shared {
+    name: "libshim_imscamera",
+    system_ext_specific: true,
+    shared_libs: [
+        "libgui",
+        "libutils",
+    ],
+    srcs: [
+        "ims/libgui.cpp"
+    ],
 }
