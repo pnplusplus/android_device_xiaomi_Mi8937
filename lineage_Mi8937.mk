@@ -30,7 +30,7 @@ PRODUCT_PACKAGES += \
 # Device identifier. This must come after all inclusions
 PRODUCT_DEVICE := Mi8937
 PRODUCT_NAME := lineage_Mi8937
-BOARD_VENDOR := Xiaomi
+BOARD_VENDOR := xiaomi
 PRODUCT_BRAND := Xiaomi
 PRODUCT_MODEL := MSM8937
 PRODUCT_MANUFACTURER := Xiaomi
